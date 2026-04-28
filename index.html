@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Cluedo — Scegli la versione</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold: #c9a94e;
+  --gold-light: #f0d080;
+  --purple-vivid: #7b2fff;
+  --purple-glow: #a855f7;
+  --purple-light: #d8b4fe;
+  --blood-light: #c41e3a;
+  --text: #ede8f5;
+  --text-dim: rgba(237,232,245,0.5);
+  --border: rgba(168,85,247,0.3);
+}
+
+html, body {
+  min-height: 100%;
+  background: #07000f;
+  font-family: 'Crimson Text', Georgia, serif;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 0%,   rgba(123,47,255,0.25) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 20% 100%,  rgba(139,0,0,0.18)   0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%,  rgba(45,0,80,0.22)   0%, transparent 60%),
+    linear-gradient(175deg, #120020 0%, #07000f 55%, #0a0005 100%);
+  min-height: 100vh;
+}
+
+/* noise */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  opacity: 0.4; pointer-events: none; z-index: 0;
+}
+
+.wrap {
+  position: relative; z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* ── HEADER ── */
+.skull { font-size: 42px; margin-bottom: 10px; filter: drop-shadow(0 0 14px rgba(168,85,247,0.6)); }
+
+.title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(32px, 11vw, 48px);
+  background: linear-gradient(130deg, var(--gold-light) 0%, var(--gold) 45%, var(--blood-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 16px rgba(201,169,78,0.4));
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.subtitle {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--purple-light);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-top: 8px;
+  opacity: 0.75;
+}
+
+/* divider */
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; margin: 28px 0 32px;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.divider span { color: var(--gold); font-size: 14px; }
+
+/* ── QUESTION ── */
+.question {
+  font-size: clamp(15px, 4.5vw, 18px);
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+/* ── CARDS ── */
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.card {
+  display: block;
+  text-decoration: none;
+  background: rgba(28,0,53,0.6);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute; inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: inherit;
+}
+.card-v1::before { background: radial-gradient(ellipse at 30% 50%, rgba(224,85,85,0.12), transparent 70%); }
+.card-v2::before { background: radial-gradient(ellipse at 30% 50%, rgba(123,47,255,0.15), transparent 70%); }
+
+.card:active { transform: scale(0.97); }
+.card:active::before { opacity: 1; }
+
+.card-v1 { border-top: 2px solid rgba(224,85,85,0.5); }
+.card-v2 { border-top: 2px solid rgba(123,47,255,0.5); }
+
+.card-top {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+}
+
+.card-icon { font-size: 26px; flex-shrink: 0; }
+
+.card-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(13px, 4vw, 16px);
+  letter-spacing: 0.04em;
+}
+.card-v1 .card-title { color: #e88; }
+.card-v2 .card-title { color: var(--purple-light); }
+
+.card-arrow {
+  margin-left: auto;
+  font-size: 18px;
+  opacity: 0.4;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.card:active .card-arrow { opacity: 1; transform: translateX(4px); }
+
+.card-desc {
+  font-size: clamp(12px, 3.5vw, 14px);
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+  padding-left: 38px;
+}
+
+/* ── FOOTER ── */
+.footer {
+  margin-top: 40px;
+  font-size: 11px;
+  color: rgba(237,232,245,0.2);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="skull">🔮</div>
+  <div class="title">Cluedo</div>
+  <div class="subtitle">Scegli la tua modalità</div>
+
+  <div class="divider"><span>✦</span></div>
+
+  <div class="question">Come vuoi tenere traccia<br>dell'indagine stasera?</div>
+
+  <div class="cards">
+
+    <a class="card card-v1" href="v1.html">
+      <div class="card-top">
+        <span class="card-icon">📋</span>
+        <span class="card-title">Versione 1 — Griglia</span>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="card-desc">
+        Una colonna per ogni giocatore. Segna chi ha cosa con un colpo d'occhio.
+        Perfetta per giocare in gruppo.
+      </div>
+    </a>
+
+    <a class="card card-v2" href="v2.html">
+      <div class="card-top">
+        <span class="card-icon">📝</span>
+        <span class="card-title">Versione 2 — Taccuino</span>
+        <span class="card-arrow">→</span>
+      </div>
+      <div class="card-desc">
+        Casella singola + area appunti liberi. Ognuno tiene le sue deduzioni private.
+        Ideale per giocatori solitari.
+      </div>
+    </a>
+
+  </div>
+
+  <div class="footer">🍻 Buona fortuna, detective</div>
+
+</div>
+</body>
+</html>

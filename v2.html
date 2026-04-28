@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Cluedo — Taccuino</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #07000f;
+  --purple-deep: #1c0035;
+  --purple-vivid: #7b2fff;
+  --purple-glow: #a855f7;
+  --purple-light: #d8b4fe;
+  --gold: #c9a94e;
+  --gold-light: #f0d080;
+  --blood: #8b0000;
+  --blood-light: #c41e3a;
+  --text: #ede8f5;
+  --text-dim: rgba(237,232,245,0.45);
+  --border: rgba(168,85,247,0.25);
+  --card: rgba(28,0,53,0.7);
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'Crimson Text', Georgia, serif;
+  color: var(--text);
+}
+
+body {
+  background:
+    radial-gradient(ellipse 70% 80% at 0% 50%, rgba(123,47,255,0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 60% at 100% 50%, rgba(139,0,0,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(45,0,80,0.35) 0%, transparent 55%),
+    linear-gradient(180deg, #120020 0%, #07000f 50%, #0a0005 100%);
+}
+
+/* noise */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  opacity: 0.4; pointer-events: none; z-index: 0;
+}
+
+/* ─── LAYOUT ─── */
+.app {
+  position: relative; z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* header strip */
+.topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,0,15,0.6);
+  backdrop-filter: blur(10px);
+}
+
+.logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(16px, 5vw, 22px);
+  background: linear-gradient(120deg, var(--gold-light), var(--gold) 50%, var(--blood-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(201,169,78,0.35));
+  line-height: 1;
+}
+
+.logo-sep {
+  width: 1px; height: 20px;
+  background: linear-gradient(180deg, transparent, var(--border), transparent);
+}
+
+.player-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.player-name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(168,85,247,0.4);
+  color: var(--purple-light);
+  font-family: 'Crimson Text', serif;
+  font-size: 13px;
+  font-style: italic;
+  width: 90px;
+  padding: 1px 3px;
+  outline: none;
+  text-align: center;
+}
+.player-name-input::placeholder { color: var(--text-dim); }
+.player-name-input:focus { border-bottom-color: var(--purple-vivid); }
+
+/* columns */
+.columns {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* vertical separator */
+.vsep {
+  width: 1px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(168,85,247,0.5) 15%,
+    rgba(201,169,78,0.4) 50%,
+    rgba(168,85,247,0.5) 85%,
+    transparent 100%);
+  position: relative;
+}
+.vsep::after {
+  content: '✦';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 10px;
+  color: var(--gold);
+  background: var(--bg);
+  padding: 4px 0;
+  line-height: 1;
+}
+
+/* ─── LEFT PANEL ─── */
+.left {
+  flex: 0 0 48%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.left-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--purple-deep) transparent;
+}
+.left-scroll::-webkit-scrollbar { width: 3px; }
+.left-scroll::-webkit-scrollbar-thumb { background: var(--purple-deep); border-radius: 2px; }
+
+/* section */
+.section { margin-bottom: 14px; }
+
+.sec-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+}
+.sec-title .ico { font-size: 13px; flex-shrink: 0; }
+
+.sec-title.red  { color: #e05555; border-bottom: 1px solid rgba(224,85,85,0.3); }
+.sec-title.gold { color: var(--gold); border-bottom: 1px solid rgba(201,169,78,0.3); }
+.sec-title.blue { color: #6ab0e0; border-bottom: 1px solid rgba(106,176,224,0.3); }
+
+/* item row */
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 2px;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+.item-row:active { background: rgba(123,47,255,0.1); }
+
+.item-name {
+  flex: 1;
+  font-size: clamp(11px, 3.2vw, 13px);
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+/* checkbox cell — cycles 4 states */
+.cell {
+  width: 26px; height: 26px;
+  flex-shrink: 0;
+  background: rgba(123,47,255,0.1);
+  border: 1px solid rgba(168,85,247,0.35);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.cell:active { transform: scale(0.85); }
+.cell[data-s="yes"]   { background: rgba(127,255,160,0.18); border-color: #7fffa0; color: #7fffa0; }
+.cell[data-s="no"]    { background: rgba(255,107,107,0.18); border-color: #ff6b6b; color: #ff6b6b; }
+.cell[data-s="maybe"] { background: rgba(201,169,78,0.18);  border-color: var(--gold); color: var(--gold); }
+
+/* legend strip */
+.legend {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 5px 8px 6px;
+  border-top: 1px solid var(--border);
+  background: rgba(7,0,15,0.5);
+}
+.leg-item {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 10px; color: var(--text-dim);
+}
+.leg-swatch {
+  width: 15px; height: 15px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+
+/* ─── RIGHT PANEL ─── */
+.right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.right-header {
+  flex-shrink: 0;
+  padding: 8px 10px 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.right-header-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.right-header-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+.notes {
+  flex: 1;
+  resize: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'Crimson Text', Georgia, serif;
+  font-size: clamp(14px, 4vw, 16px);
+  line-height: 1.85;
+  padding: 4px 12px 12px 10px;
+  caret-color: var(--purple-glow);
+
+  /* ruled lines */
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent calc(1.85em - 1px),
+    rgba(168,85,247,0.1) calc(1.85em - 1px),
+    rgba(168,85,247,0.1) 1.85em
+  );
+  background-attachment: local;
+}
+.notes::placeholder {
+  color: rgba(168,85,247,0.25);
+  font-style: italic;
+}
+.notes::-webkit-scrollbar { width: 3px; }
+.notes::-webkit-scrollbar-thumb { background: var(--purple-deep); }
+
+.notes-footer {
+  flex-shrink: 0;
+  padding: 4px 10px 6px;
+  text-align: right;
+  font-size: 10px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  background: rgba(7,0,15,0.5);
+  font-style: italic;
+}
+
+/* reset fab */
+.fab-reset {
+  position: fixed;
+  bottom: 14px; right: 14px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(139,0,0,0.45);
+  border: 1px solid rgba(196,30,58,0.5);
+  color: #ff8080;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 0 12px rgba(139,0,0,0.3);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s;
+}
+.fab-reset:active { background: rgba(139,0,0,0.7); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="logo">Cluedo</div>
+    <div class="logo-sep"></div>
+    <div class="player-label">Detective:</div>
+    <input class="player-name-input" id="detective" placeholder="Il tuo nome…" maxlength="16">
+  </div>
+
+  <!-- MAIN COLUMNS -->
+  <div class="columns">
+
+    <!-- LEFT: checklist -->
+    <div class="left">
+      <div class="left-scroll" id="leftScroll">
+
+        <div class="section" id="sec-sospetti">
+          <div class="sec-title red"><span class="ico">🕵️</span> Sospettati</div>
+        </div>
+
+        <div class="section" id="sec-armi">
+          <div class="sec-title gold"><span class="ico">🍻</span> Armi (Alcolici)</div>
+        </div>
+
+        <div class="section" id="sec-stanze">
+          <div class="sec-title blue"><span class="ico">🏛️</span> Stanze</div>
+        </div>
+
+      </div>
+
+      <!-- legend -->
+      <div class="legend">
+        <div class="leg-item">
+          <div class="leg-swatch" style="background:rgba(127,255,160,0.2);border:1px solid #7fffa0">✓</div> Sì
+        </div>
+        <div class="leg-item">
+          <div class="leg-swatch" style="background:rgba(255,107,107,0.2);border:1px solid #ff6b6b">✗</div> No
+        </div>
+        <div class="leg-item">
+          <div class="leg-swatch" style="background:rgba(201,169,78,0.2);border:1px solid #c9a94e">?</div> Forse
+        </div>
+        <div class="leg-item">
+          <div class="leg-swatch" style="background:rgba(123,47,255,0.1);border:1px solid rgba(168,85,247,0.35)"> </div> —
+        </div>
+      </div>
+    </div>
+
+    <!-- separator -->
+    <div class="vsep"></div>
+
+    <!-- RIGHT: notes -->
+    <div class="right">
+      <div class="right-header">
+        <div class="right-header-title">Appunti</div>
+        <div class="right-header-line"></div>
+      </div>
+      <textarea
+        class="notes"
+        id="notes"
+        placeholder="Scrivi qui le tue deduzioni, indizi e sospetti…"
+        spellcheck="false"
+      ></textarea>
+      <div class="notes-footer" id="charCount">0 caratteri</div>
+    </div>
+
+  </div><!-- /columns -->
+</div><!-- /app -->
+
+<button class="fab-reset" title="Azzera tutto" onclick="confirmReset()">↺</button>
+
+<script>
+const ITEMS = {
+  sospetti: [
+    'Fabio','Le Ale','Matte',
+    'Anfo','Laure','Vise',
+    'Albi','Giulia','Vale'
+  ],
+  armi: [
+    'Corona','Passoa','Jaeger',
+    'Vodka','Spritz','Gin'
+  ],
+  stanze: [
+    'Cucina','Salotto','Camera da Letto',
+    'Bagno','Bagno VIP','Tettoia',
+    'Orto','Giardino'
+  ]
+};
+
+const STATES = ['', 'yes', 'no', 'maybe'];
+const GLYPHS  = { '': '', yes: '✓', no: '✗', maybe: '?' };
+
+let cellStates = {}; // key → state index (0-3)
+
+function buildSection(sectionId, keys) {
+  const sec = document.getElementById('sec-' + sectionId);
+  keys.forEach(name => {
+    const key = sectionId + ':' + name;
+    if (!(key in cellStates)) cellStates[key] = 0;
+
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const label = document.createElement('div');
+    label.className = 'item-name';
+    label.textContent = name;
+
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.key = key;
+    applyCell(cell, cellStates[key]);
+
+    cell.addEventListener('click', () => {
+      cellStates[key] = (cellStates[key] + 1) % STATES.length;
+      applyCell(cell, cellStates[key]);
+      save();
+    });
+
+    row.appendChild(label);
+    row.appendChild(cell);
+    sec.appendChild(row);
+  });
+}
+
+function applyCell(el, idx) {
+  const s = STATES[idx];
+  el.dataset.s = s;
+  el.textContent = GLYPHS[s];
+}
+
+// notes char counter
+const notesEl = document.getElementById('notes');
+const countEl = document.getElementById('charCount');
+notesEl.addEventListener('input', () => {
+  countEl.textContent = notesEl.value.length + ' caratteri';
+  save();
+});
+
+// player name
+const detectiveEl = document.getElementById('detective');
+detectiveEl.addEventListener('input', save);
+
+function save() {
+  try {
+    localStorage.setItem('cl2_cells', JSON.stringify(cellStates));
+    localStorage.setItem('cl2_notes', notesEl.value);
+    localStorage.setItem('cl2_detective', detectiveEl.value);
+  } catch(e) {}
+}
+
+function load() {
+  try {
+    const c = localStorage.getItem('cl2_cells');
+    const n = localStorage.getItem('cl2_notes');
+    const d = localStorage.getItem('cl2_detective');
+    if (c) cellStates = JSON.parse(c);
+    if (n) { notesEl.value = n; countEl.textContent = n.length + ' caratteri'; }
+    if (d) detectiveEl.value = d;
+  } catch(e) {}
+}
+
+function confirmReset() {
+  if (!confirm('Azzerare tutto — caselle e appunti?')) return;
+  Object.keys(cellStates).forEach(k => cellStates[k] = 0);
+  document.querySelectorAll('.cell').forEach(el => applyCell(el, 0));
+  notesEl.value = '';
+  detectiveEl.value = '';
+  countEl.textContent = '0 caratteri';
+  save();
+}
+
+// init
+load();
+Object.keys(ITEMS).forEach(sec => buildSection(sec, ITEMS[sec]));
+// re-apply loaded states to DOM cells
+document.querySelectorAll('.cell').forEach(el => {
+  const k = el.dataset.key;
+  if (k in cellStates) applyCell(el, cellStates[k]);
+});
+</script>
+</body>
+</html>

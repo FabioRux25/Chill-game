@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Cluedo — Foglio di Gioco</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-dark: #0a0010;
+    --bg-mid: #1a0030;
+    --purple-deep: #2d0050;
+    --purple-vivid: #7b2fff;
+    --purple-glow: #a855f7;
+    --purple-light: #d8b4fe;
+    --gold: #c9a94e;
+    --gold-light: #f0d080;
+    --blood: #8b0000;
+    --blood-light: #c41e3a;
+    --card-bg: rgba(45, 0, 80, 0.55);
+    --border: rgba(168, 85, 247, 0.35);
+    --text: #ede8f5;
+    --text-dim: rgba(237, 232, 245, 0.55);
+    --cell-bg: rgba(123, 47, 255, 0.12);
+    --cell-checked: rgba(123, 47, 255, 0.45);
+    --cell-border: rgba(168, 85, 247, 0.4);
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg-dark);
+    font-family: 'Crimson Text', Georgia, serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(123,47,255,0.28) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(139,0,0,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 30% at 20% 60%, rgba(45,0,80,0.4) 0%, transparent 60%),
+      linear-gradient(175deg, #1a0030 0%, #0a0010 40%, #0d0005 100%);
+    padding-bottom: 48px;
+  }
+
+  /* noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 12px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 32px 0 20px;
+  }
+
+  .title-main {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(28px, 9vw, 40px);
+    letter-spacing: 0.06em;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--blood-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    line-height: 1.1;
+    filter: drop-shadow(0 0 12px rgba(201,169,78,0.4));
+  }
+
+  .title-sub {
+    font-family: 'Crimson Text', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--purple-light);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-top: 6px;
+    opacity: 0.8;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .divider-icon { color: var(--gold); font-size: 16px; }
+
+  /* ── PLAYER SETUP ── */
+  .player-setup {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px 16px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(8px);
+  }
+
+  .section-label {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: rgba(201,169,78,0.25); }
+
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .player-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .player-num {
+    font-size: 10px;
+    color: var(--purple-light);
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  .player-input {
+    background: rgba(123,47,255,0.15);
+    border: 1px solid var(--cell-border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Crimson Text', serif;
+    font-size: 13px;
+    padding: 5px 6px;
+    text-align: center;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .player-input::placeholder { color: var(--text-dim); font-style: italic; }
+  .player-input:focus {
+    border-color: var(--purple-vivid);
+    background: rgba(123,47,255,0.28);
+  }
+
+  /* ── SECTION CARD ── */
+  .section-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    backdrop-filter: blur(8px);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .section-icon { font-size: 18px; flex-shrink: 0; }
+
+  .section-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(11px, 3.5vw, 14px);
+    letter-spacing: 0.05em;
+    flex: 1;
+  }
+
+  .section-toggle {
+    font-size: 11px;
+    color: var(--purple-light);
+    opacity: 0.6;
+    transition: transform 0.25s;
+  }
+  .section-card.open .section-toggle { transform: rotate(180deg); }
+
+  .section-body {
+    display: none;
+    padding: 0 10px 12px;
+  }
+  .section-card.open .section-body { display: block; }
+
+  /* coloured top bar per section */
+  .section-card[data-type="sospetti"] .section-header { border-top: 2px solid #e74c3c; }
+  .section-card[data-type="armi"]     .section-header { border-top: 2px solid #c9a94e; }
+  .section-card[data-type="stanze"]   .section-header { border-top: 2px solid #2980b9; }
+
+  /* ── COLUMN HEADERS (player names) ── */
+  .col-headers {
+    display: grid;
+    grid-template-columns: 1fr repeat(6, 28px);
+    gap: 3px;
+    align-items: center;
+    margin-bottom: 4px;
+    padding: 0 2px;
+  }
+  .col-header-empty { /* spacer for item name column */ }
+  .col-header {
+    font-size: 9px;
+    color: var(--purple-light);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── ROW ── */
+  .item-row {
+    display: grid;
+    grid-template-columns: 1fr repeat(6, 28px);
+    gap: 3px;
+    align-items: center;
+    margin-bottom: 3px;
+  }
+
+  .item-name {
+    font-size: clamp(11px, 3.2vw, 13px);
+    color: var(--text);
+    padding-right: 4px;
+    line-height: 1.25;
+    font-style: italic;
+  }
+
+  /* ── CHECKBOXES ── */
+  .cell {
+    width: 28px;
+    height: 28px;
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .cell:active { transform: scale(0.9); }
+  .cell.checked {
+    background: var(--cell-checked);
+    border-color: var(--purple-vivid);
+  }
+  .cell.checked::after {
+    content: '✓';
+    font-size: 15px;
+    color: var(--purple-light);
+    font-weight: bold;
+    line-height: 1;
+  }
+  /* cycle: empty → ✓ → ✗ → ? → empty */
+  .cell[data-state="yes"]::after  { content: '✓'; color: #7fffa0; font-size: 15px; }
+  .cell[data-state="no"]::after   { content: '✗'; color: #ff6b6b; font-size: 14px; }
+  .cell[data-state="maybe"]::after { content: '?'; color: var(--gold); font-size: 14px; font-weight: bold; }
+
+  .cell[data-state="yes"]   { background: rgba(127,255,160,0.18); border-color: #7fffa0; }
+  .cell[data-state="no"]    { background: rgba(255,107,107,0.18); border-color: #ff6b6b; }
+  .cell[data-state="maybe"] { background: rgba(201,169,78,0.18);  border-color: var(--gold); }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px 0 2px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+
+  /* ── RESET ── */
+  .btn-reset {
+    display: block;
+    margin: 20px auto 0;
+    background: transparent;
+    border: 1px solid rgba(139,0,0,0.6);
+    color: #ff6b6b;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    padding: 9px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-reset:active { background: rgba(139,0,0,0.25); }
+
+  /* ── GLOW LINES ── */
+  .glow-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--purple-vivid) 40%, var(--blood-light) 70%, transparent 100%);
+    opacity: 0.4;
+    margin: 4px 0;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--purple-deep); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-main">Cluedo</div>
+    <div class="title-sub">Foglio d'Indagine</div>
+    <div class="divider"><span class="divider-icon">🔍</span></div>
+  </header>
+
+  <!-- PLAYER NAMES -->
+  <div class="player-setup">
+    <div class="section-label">Investigatori</div>
+    <div class="players-grid" id="playersGrid">
+      <!-- generated by JS -->
+    </div>
+  </div>
+
+  <!-- SUSPECTS -->
+  <div class="section-card open" data-type="sospetti">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">🔴</span>
+      <span class="section-title">Sospettati</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="col-headers" id="hdrs-sospetti"></div>
+      <div class="glow-line"></div>
+      <div id="rows-sospetti"></div>
+    </div>
+  </div>
+
+  <!-- WEAPONS -->
+  <div class="section-card open" data-type="armi">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">🗡️</span>
+      <span class="section-title">Armi</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="col-headers" id="hdrs-armi"></div>
+      <div class="glow-line"></div>
+      <div id="rows-armi"></div>
+    </div>
+  </div>
+
+  <!-- ROOMS -->
+  <div class="section-card open" data-type="stanze">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">🏛️</span>
+      <span class="section-title">Stanze</span>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="col-headers" id="hdrs-stanze"></div>
+      <div class="glow-line"></div>
+      <div id="rows-stanze"></div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(127,255,160,0.2);border:1px solid #7fffa0">✓</div> Ha la carta
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(255,107,107,0.2);border:1px solid #ff6b6b">✗</div> Non ce l'ha
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(201,169,78,0.2);border:1px solid #c9a94e">?</div> Forse
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(123,47,255,0.12);border:1px solid rgba(168,85,247,0.4)">·</div> Ignoto
+    </div>
+  </div>
+
+  <button class="btn-reset" onclick="showResetDialog()">↺ AZZERA TUTTO</button>
+
+  <!-- Custom confirm dialog -->
+  <div id="resetDialog" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:linear-gradient(135deg,#1a0030,#0d0005);border:1px solid rgba(168,85,247,0.5);border-radius:14px;padding:28px 24px;max-width:280px;width:90%;text-align:center;">
+      <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#d8b4fe;margin-bottom:8px;">Azzera tutto?</div>
+      <div style="font-size:13px;color:rgba(237,232,245,0.6);margin-bottom:22px;">Tutti i segni e i nomi verranno cancellati.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="hideResetDialog()" style="flex:1;padding:10px;background:transparent;border:1px solid rgba(168,85,247,0.4);border-radius:8px;color:#d8b4fe;font-family:'Crimson Text',serif;font-size:14px;cursor:pointer;">Annulla</button>
+        <button onclick="confirmReset()" style="flex:1;padding:10px;background:rgba(139,0,0,0.35);border:1px solid #ff6b6b;border-radius:8px;color:#ff6b6b;font-family:'Crimson Text',serif;font-size:14px;cursor:pointer;">Azzera</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const PLAYERS = 6;
+
+const DATA = {
+  sospetti: [
+    'Fabio',
+    'Le Ale',
+    'Matte',
+    'Anfo',
+    'Laure',
+    'Vise',
+    'Albi',
+    'Giulia',
+    'Vale',
+  ],
+  armi: [
+    'Corona',
+    'Passoa',
+    'Jaeger',
+    'Vodka',
+    'Spritz',
+    'Gin',
+  ],
+  stanze: [
+    'Cucina',
+    'Salotto',
+    'Camera da Letto',
+    'Bagno',
+    'Bagno VIP',
+    'Tettoia',
+    'Orto',
+    'Giardino',
+  ],
+};
+
+const STATES = ['', 'yes', 'no', 'maybe'];
+let cells = {}; // key: "section-row-col" → state index
+
+function playerName(i) {
+  const inp = document.getElementById('pname-' + i);
+  return inp && inp.value.trim() ? inp.value.trim() : `P${i+1}`;
+}
+
+// Build player inputs
+const pg = document.getElementById('playersGrid');
+for (let i = 0; i < PLAYERS; i++) {
+  const wrap = document.createElement('div');
+  wrap.className = 'player-input-wrap';
+  wrap.innerHTML = `<div class="player-num">Gioc. ${i+1}</div>
+    <input class="player-input" id="pname-${i}" placeholder="Nome…" maxlength="8" oninput="rebuildHeaders()">`;
+  pg.appendChild(wrap);
+}
+
+function buildHeaders(section) {
+  const el = document.getElementById('hdrs-' + section);
+  el.innerHTML = '<div class="col-header-empty"></div>';
+  for (let i = 0; i < PLAYERS; i++) {
+    const d = document.createElement('div');
+    d.className = 'col-header';
+    d.id = `hdr-${section}-${i}`;
+    d.textContent = playerName(i);
+    el.appendChild(d);
+  }
+}
+
+function rebuildHeaders() {
+  ['sospetti','armi','stanze'].forEach(s => {
+    for (let i = 0; i < PLAYERS; i++) {
+      const el = document.getElementById(`hdr-${s}-${i}`);
+      if (el) el.textContent = playerName(i);
+    }
+  });
+}
+
+function buildRows(section, items) {
+  const container = document.getElementById('rows-' + section);
+  container.innerHTML = '';
+  items.forEach((name, ri) => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'item-name';
+    nameEl.textContent = name;
+    row.appendChild(nameEl);
+    for (let ci = 0; ci < PLAYERS; ci++) {
+      const key = `${section}-${ri}-${ci}`;
+      if (!(key in cells)) cells[key] = 0;
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.key = key;
+      cell.dataset.state = STATES[cells[key]];
+      cell.addEventListener('click', () => cycleCell(key, cell));
+      row.appendChild(cell);
+    }
+    container.appendChild(row);
+  });
+}
+
+function cycleCell(key, el) {
+  cells[key] = (cells[key] + 1) % STATES.length;
+  el.dataset.state = STATES[cells[key]];
+  saveState();
+}
+
+function toggleSection(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+function showResetDialog() {
+  const d = document.getElementById('resetDialog');
+  d.style.display = 'flex';
+}
+function hideResetDialog() {
+  document.getElementById('resetDialog').style.display = 'none';
+}
+function confirmReset() {
+  hideResetDialog();
+  Object.keys(cells).forEach(k => cells[k] = 0);
+  document.querySelectorAll('.cell').forEach(el => { el.dataset.state = ''; });
+  document.querySelectorAll('.player-input').forEach(inp => inp.value = '');
+  rebuildHeaders();
+  saveState();
+}
+
+// Persistence
+function saveState() {
+  try {
+    const names = [];
+    for (let i = 0; i < PLAYERS; i++) {
+      names.push(document.getElementById('pname-' + i).value);
+    }
+    localStorage.setItem('cluedo_cells', JSON.stringify(cells));
+    localStorage.setItem('cluedo_names', JSON.stringify(names));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const c = localStorage.getItem('cluedo_cells');
+    const n = localStorage.getItem('cluedo_names');
+    if (c) cells = JSON.parse(c);
+    if (n) {
+      const names = JSON.parse(n);
+      names.forEach((name, i) => {
+        const inp = document.getElementById('pname-' + i);
+        if (inp) inp.value = name;
+      });
+    }
+  } catch(e) {}
+}
+
+function init() {
+  loadState();
+  ['sospetti','armi','stanze'].forEach(s => {
+    buildHeaders(s);
+    buildRows(s, DATA[s]);
+  });
+  // apply loaded cell states to DOM
+  document.querySelectorAll('.cell').forEach(el => {
+    const key = el.dataset.key;
+    if (key in cells) el.dataset.state = STATES[cells[key]];
+  });
+  rebuildHeaders();
+
+  // Auto-save names on change
+  document.querySelectorAll('.player-input').forEach(inp => {
+    inp.addEventListener('change', saveState);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
